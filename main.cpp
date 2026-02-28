@@ -117,7 +117,7 @@ long double OptionPrice(long double S_0, long double T, long double K, long doub
     return exp(-r * T) * (S_0 / T) * (4.0L / (sigma * sigma)) * real(result);
 }
 
-// --- 5. MAIN ---
+
 
 int main() {
 //one option's price
@@ -139,62 +139,62 @@ int main() {
 //Ai generated code : Random number generator, using my instructions for ai training, dangerous when sigma^2*T < 0.01, and export to csv file
 
 /*
-    const int NUM_SAMPLES = 10000;   // H·ny adatot szeretnÈl?
-    ofstream file("training_data.csv"); // Kimeneti f·jl
+    const int NUM_SAMPLES = 10000;   // H√°ny adatot szeretn√©l?
+    ofstream file("training_data.csv"); // Kimeneti f√°jl
 
-    // CSV fejlÈc (S0, K, T, sigma, r, price)
+    // CSV fejl√©c (S0, K, T, sigma, r, price)
     file << "S0,K,T,sigma,r,price" << endl;
 
-    // 2. MODERN V…LETLENSZ¡M GENER¡TOR INICIALIZ¡L¡SA
-    random_device rd;  // "Hardveres" mag a vÈletlensz·mokhoz
-    mt19937 gen(rd()); // Mersenne Twister gener·tor (nagyon jÛ minısÈg˚)
+    // 2. MODERN V√âLETLENSZ√ÅM GENER√ÅTOR INICIALIZ√ÅL√ÅSA
+    random_device rd;  // "Hardveres" mag a v√©letlensz√°mokhoz
+    mt19937 gen(rd()); // Mersenne Twister gener√°tor (nagyon j√≥ min√µs√©g√ª)
 
-    // 3. INTERVALLUMOK BE¡LLÕT¡SA (A DOKUMENTUM ALAPJ¡N)
-    // long double tÌpust haszn·lunk a pontoss·g miatt
-    uniform_real_distribution<long double> dist_S0(80.0, 120.0);    // ¡rfolyam: 80 - 120
-    uniform_real_distribution<long double> dist_K(80.0, 120.0);     // KˆtÈsi ·r: 80 - 120
+    // 3. INTERVALLUMOK BE√ÅLL√çT√ÅSA (A DOKUMENTUM ALAPJ√ÅN)
+    // long double t√≠pust haszn√°lunk a pontoss√°g miatt
+    uniform_real_distribution<long double> dist_S0(80.0, 120.0);    // √Årfolyam: 80 - 120
+    uniform_real_distribution<long double> dist_K(80.0, 120.0);     // K√∂t√©si √°r: 80 - 120
 
-    // Figyelem: A T-t ne engedj¸k 0.25 (3 hÛnap) al· a stabilit·s miatt
-    uniform_real_distribution<long double> dist_T(0.25, 2.0);       // Lej·rat: 0.25 Èv - 2 Èv
+    // Figyelem: A T-t ne engedj√ºk 0.25 (3 h√≥nap) al√° a stabilit√°s miatt
+    uniform_real_distribution<long double> dist_T(0.25, 2.0);       // Lej√°rat: 0.25 √©v - 2 √©v
 
-    // Figyelem: A volatilit·st ne engedj¸k 0.1 al· a "veszÈlyzÛna" miatt
-    uniform_real_distribution<long double> dist_sigma(0.12, 0.50);  // Volatilit·s: 12% - 50%
+    // Figyelem: A volatilit√°st ne engedj√ºk 0.1 al√° a "vesz√©lyz√≥na" miatt
+    uniform_real_distribution<long double> dist_sigma(0.12, 0.50);  // Volatilit√°s: 12% - 50%
 
     uniform_real_distribution<long double> dist_r(0.01, 0.10);      // Kamat: 1% - 10%
 
     cout << "Adatgeneralas inditasa..." << endl;
     int valid_samples = 0;
 
-    // 4. GENER¡L” CIKLUS (While loop, hogy biztosan meglegyen a 10.000 jÛ adat)
+    // 4. GENER√ÅL√ì CIKLUS (While loop, hogy biztosan meglegyen a 10.000 j√≥ adat)
     while (valid_samples < NUM_SAMPLES) {
 
-        // ParamÈterek sorsol·sa
+        // Param√©terek sorsol√°sa
         long double S0 = dist_S0(gen);
         long double K = dist_K(gen);
         long double T = dist_T(gen);
         long double sigma = dist_sigma(gen);
         long double r = dist_r(gen);
 
-        // --- KRITIKUS SZ€R’ A DOKUMENTUM ALAPJ¡N ---
-        // A tanulm·ny szerint, ha sigma^2 * T < 0.01, az inverziÛ instabil lehet. [cite: 400]
+        // --- KRITIKUS SZ√õR√ï A DOKUMENTUM ALAPJ√ÅN ---
+        // A tanulm√°ny szerint, ha sigma^2 * T < 0.01, az inverzi√≥ instabil lehet. [cite: 400]
         if (sigma * sigma * T < 0.01) {
-            continue; // Ezt a kˆrt eldobjuk, gener·lunk ˙jat
+            continue; // Ezt a k√∂rt eldobjuk, gener√°lunk √∫jat
         }
 
-        // ¡raz·s
+        // √Åraz√°s
         long double price = OptionPrice(S0, T, K, sigma, r);
 
-        // EllenırzÈs: Ha az eredmÈny "Not a Number" vagy vÈgtelen, eldobjuk
+        // Ellen√µrz√©s: Ha az eredm√©ny "Not a Number" vagy v√©gtelen, eldobjuk
         if (isnan(price) || isinf(price) || price < 0.0L || price > S0) {
             continue;
         }
 
-        // Ha minden okÈ, kiÌrjuk a f·jlba
+        // Ha minden ok√©, ki√≠rjuk a f√°jlba
         file << S0 << "," << K << "," << T << "," << sigma << "," << r << "," << price << endl;
 
         valid_samples++;
 
-        // Progress jelzı (hogy l·sd, hol tart)
+        // Progress jelz√µ (hogy l√°sd, hol tart)
         if (valid_samples % 1000 == 0) {
             cout << valid_samples << " / " << NUM_SAMPLES << " kesz..." << endl;
         }
@@ -206,3 +206,4 @@ int main() {
 
     return 0;
 }
+
