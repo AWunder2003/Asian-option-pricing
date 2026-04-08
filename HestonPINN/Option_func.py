@@ -96,7 +96,7 @@ class HestonAsianPINN(nn.Module):
         x = torch.cat([t_s, S_s, v_s, A_s], dim=1)
         return self.net(x)
 
-# --- 3. MINTAVÉTELEZŐ ---
+
 class OptionSampler:
     """ mintavételez a vizsgálandő térből, 
         Args:  t, S, A, v, (float) ezeknek minimuma és maximuma, kivéve ugye a t-t aminek 0, valamint, az eszköz amin fut: device (class a torch.device)
@@ -131,8 +131,8 @@ class OptionSampler:
         
         S_raw = self.S_min + u[:, 2] * (self.S_max - self.S_min)
         A_raw = self.A_min + u[:, 3] * (self.A_max - self.A_min)
-        #legyen 0.2
-        c = 0.2 
+        #0.4-et találtam optimálisnak
+        c = 0.4 
 
         # A a harmadfokú polinom transzformáció, ami tiszteletben tartja a peremeket
         S_mag = S_raw + c * (1.55 - S_raw) * (S_raw - self.S_min) * (self.S_max - S_raw)
@@ -218,7 +218,7 @@ def calculate_payoff_loss(model, tau_ic, S_ic, v_ic, A_ic, T_maturity, params):
     """
     K = params['K']
     U_pred = model(tau_ic, S_ic, v_ic, A_ic)
-    payoff = F.softplus((A_ic / T_maturity) - K, beta=15.0) # <--- JAVÍTVA
+    payoff = F.softplus((A_ic / T_maturity) - K, beta=20.0) 
     return torch.mean((U_pred - payoff) ** 2)
     
 def calculate_neumann_bc_loss(model, tau_bc, S_bc, v_bc, A_bc):
@@ -232,58 +232,3 @@ def calculate_neumann_bc_loss(model, tau_bc, S_bc, v_bc, A_bc):
     d2U_dS2 = torch.autograd.grad(dU_dS, S_bc, grad_outputs=ones, create_graph=True)[0]
     return torch.mean(d2U_dS2 ** 2)
 
-# --- 5. RAR (Memóriabiztos, darabolt verzió 24GB VRAM-ra) #model és sampler objektumok, params lista, többi érték..
-def get_worst_points_adaptive(model, sampler, params, T_maturity, num_pde_to_add=500, num_ic_to_add=100):
-    model.eval()
-    
-    total_pde_points = 100000  # Maradhat a 100k letapogatás
-    chunk_size = 10000         # 10k pont egyszerre pont kényelmes a 24 GB VRAM-nak
-    
-    # 1. BELSŐ TÉR: Generálás (Gradiens nélkül alig foglal memóriát)
-    t_all, S_all, v_all, A_all = sampler.sample_interior(total_pde_points)
-    
-    pde_errs_list = []
-    
-    # DARABOLÁSOS (CHUNKED) KIÉRTÉKELÉS
-    for i in range(0, total_pde_points, chunk_size):
-        # Csak az aktuális csomagot tesszük gradiens-követetté
-        t_c = t_all[i:i+chunk_size].clone().detach().requires_grad_(True)
-        S_c = S_all[i:i+chunk_size].clone().detach().requires_grad_(True)
-        v_c = v_all[i:i+chunk_size].clone().detach().requires_grad_(True)
-        A_c = A_all[i:i+chunk_size].clone().detach().requires_grad_(True)
-        
-        with torch.set_grad_enabled(True):
-            res = calculate_heston_asian_pde(model, t_c, S_c, v_c, A_c, params)
-            pde_err = res**2
-            pde_errs_list.append(pde_err.flatten().detach())
-            
-        # VRAM AZONNALI ÜRÍTÉSE a csomag után
-        del t_c, S_c, v_c, A_c, res, pde_err
-        torch.cuda.empty_cache()
-        
-    # GLOBÁLIS SZŰRÉS AZ ÖSSZES CSOMAG EREDMÉNYÉBŐL
-    all_pde_errs = torch.cat(pde_errs_list)
-    _, top_idx = torch.topk(all_pde_errs, num_pde_to_add)
-    
-    worst_pde = {
-        'tau': t_all[top_idx].detach(), 
-        'S': S_all[top_idx].detach(), 
-        'v': v_all[top_idx].detach(), 
-        'A': A_all[top_idx].detach()
-    }
-    
-    # KEZDETI FELTÉTEL PONTOK (IC) - Nincs gradiens számítás, simán elfér
-    t_i, S_i, v_i, A_i = sampler.sample_initial_condition(10000)
-    with torch.no_grad():
-        U_p = model(t_i, S_i, v_i, A_i)
-        payoff = F.softplus((A_i / T_maturity) - 1.0, beta=15.0)
-        ic_err = (U_p - payoff)**2
-        _, idx_i = torch.topk(ic_err.flatten(), num_ic_to_add)
-        worst_ic = {
-            'tau': t_i[idx_i].detach(), 
-            'S': S_i[idx_i].detach(), 
-            'v': v_i[idx_i].detach(), 
-            'A': A_i[idx_i].detach()
-        }
-        
-    return worst_pde, worst_ic
